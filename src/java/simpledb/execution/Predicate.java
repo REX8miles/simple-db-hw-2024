@@ -12,6 +12,9 @@ public class Predicate implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    private int fieldIndex;
+    private Op op;
+    private Field operand;
     /** Constants used for return codes in Field.compare */
     public enum Op implements Serializable {
         EQUALS, GREATER_THAN, LESS_THAN, LESS_THAN_OR_EQ, GREATER_THAN_OR_EQ, LIKE, NOT_EQUALS;
@@ -44,7 +47,6 @@ public class Predicate implements Serializable {
                 return "<>";
             throw new IllegalStateException("impossible to reach here");
         }
-
     }
     
     /**
@@ -59,6 +61,9 @@ public class Predicate implements Serializable {
      */
     public Predicate(int field, Op op, Field operand) {
         // some code goes here
+        this.fieldIndex = field;
+        this.op = op;
+        this.operand = operand;
     }
 
     /**
@@ -67,7 +72,7 @@ public class Predicate implements Serializable {
     public int getField()
     {
         // some code goes here
-        return -1;
+        return this.fieldIndex;
     }
 
     /**
@@ -76,7 +81,7 @@ public class Predicate implements Serializable {
     public Op getOp()
     {
         // some code goes here
-        return null;
+        return this.op;
     }
     
     /**
@@ -85,7 +90,7 @@ public class Predicate implements Serializable {
     public Field getOperand()
     {
         // some code goes here
-        return null;
+        return this.operand;
     }
     
     /**
@@ -100,7 +105,8 @@ public class Predicate implements Serializable {
      */
     public boolean filter(Tuple t) {
         // some code goes here
-        return false;
+        Field otherOperand = t.getField(fieldIndex);
+        return otherOperand.compare(op, operand);
     }
 
     /**
@@ -109,6 +115,6 @@ public class Predicate implements Serializable {
      */
     public String toString() {
         // some code goes here
-        return "";
+        return String.format("f = %d, op = %s, operand = %s", fieldIndex, op.toString(), operand.toString());
     }
 }

@@ -1,6 +1,7 @@
 package simpledb.execution;
 
 import simpledb.common.Database;
+import simpledb.transaction.Transaction;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 import simpledb.common.Type;
@@ -20,6 +21,15 @@ public class SeqScan implements OpIterator {
 
     private static final long serialVersionUID = 1L;
 
+    private final TransactionId tid;
+
+    // table的别名
+    private String tableAlias;
+
+    private int tableId;
+
+    private DbFileIterator dbFileIterator;
+
     /**
      * Creates a sequential scan over the specified table as a part of the
      * specified transaction.
@@ -38,6 +48,9 @@ public class SeqScan implements OpIterator {
      */
     public SeqScan(TransactionId tid, int tableid, String tableAlias) {
         // some code goes here
+        this.tid = tid;
+        this.tableAlias = tableAlias;
+        this.tableId = tableid;
     }
 
     /**
@@ -46,7 +59,7 @@ public class SeqScan implements OpIterator {
      *       be the actual name of the table in the catalog of the database
      * */
     public String getTableName() {
-        return null;
+        return Database.getCatalog().getTableName(tableId);
     }
 
     /**
@@ -55,7 +68,7 @@ public class SeqScan implements OpIterator {
     public String getAlias()
     {
         // some code goes here
-        return null;
+        return this.tableAlias;
     }
 
     /**
@@ -72,6 +85,8 @@ public class SeqScan implements OpIterator {
      */
     public void reset(int tableid, String tableAlias) {
         // some code goes here
+        this.tableAlias = tableAlias;
+        this.tableId = tableid;
     }
 
     public SeqScan(TransactionId tid, int tableId) {
@@ -80,6 +95,8 @@ public class SeqScan implements OpIterator {
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
+        dbFileIterator = Database.getCatalog().getDatabaseFile(tableId).iterator(tid);
+        dbFileIterator.open();
     }
 
     /**
@@ -94,26 +111,45 @@ public class SeqScan implements OpIterator {
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return null;
+        TupleDesc desc = Database.getCatalog().getTupleDesc(tableId);
+        String[] names = new String[desc.numFields()];
+        Type[] types = new Type[desc.numFields()];
+        for (int i = 0; i < desc.numFields(); i++) {
+            names[i] = this.getAlias() + "." + desc.getFieldName(i);
+            types[i] = desc.getFieldType(i);
+        }
+        return new TupleDesc(types, names);
     }
 
     public boolean hasNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        return false;
+        if(dbFileIterator == null) {
+            return false;
+        }
+        return dbFileIterator.hasNext();
     }
 
     public Tuple next() throws NoSuchElementException,
             TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+        if(dbFileIterator==null){
+            throw new NoSuchElementException("The dbFileIterator is null");
+        }
+        Tuple tuple = dbFileIterator.next();
+        if(tuple==null){
+            throw new NoSuchElementException("The next tuple is null");
+        }
+        return tuple;
     }
 
     public void close() {
         // some code goes here
+        dbFileIterator = null;
     }
 
     public void rewind() throws DbException, NoSuchElementException,
             TransactionAbortedException {
         // some code goes here
+        dbFileIterator.rewind();
     }
 }
